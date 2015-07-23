@@ -1,0 +1,3 @@
+*.bc
+llvm-as_temp.js
+
