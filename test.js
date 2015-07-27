@@ -1,4 +1,4 @@
-var as = require('./lib/_llvm-as');
+var as = require('./as');
 var fs = require('fs');
 var source = fs.readFileSync(__dirname + '/test.ll', 'utf-8');
 

@@ -1,3 +1,5 @@
+var _as = require('./lib/_llvm-as');
+
 module.exports = function(assembly, callback) {
     var messages;
     var parsedMessages;
@@ -5,26 +7,28 @@ module.exports = function(assembly, callback) {
     var additionalArguments = [].slice.call(arguments, 1, arguments.length - 1);
     var args = ['llvm.ll'].concat(additionalArguments);
     console.log('calling process with args', args);
+    var root;
 
     var Module = {
         thisProgram: 'llvm-as',
         arguments: args,
         preRun: function() {
-            console.log('prerun');
+            console.log('prerun', arguments);
             messages = [];
             parsedMessages = [];
-            FS.createDataFile('/', 'llvm.ll', intArrayFromString(assembly), true, false);
+            var f = Module.FS_createDataFile('/', 'llvm.ll', Module.intArrayFromString(assembly), true, false);
+            root = f.mount.root;
         },
-        postRun: function() {
+        onExit: function(EXITSTATUS) {
             console.log('llvm-as exited with code', EXITSTATUS);
-            FS.unlink('/llvm.ll');
+            Module.FS_unlink('/llvm.ll');
 
             var data = null;
             var error = null;
-            var outputFile = FS.root.contents['llvm.bc'];
+            var outputFile = root.contents['llvm.bc'];
             if (outputFile) {
                 data = new Uint8Array(outputFile.contents);
-                FS.unlink('/llvm.bc');
+                Module.FS_unlink('/llvm.bc');
             } 
             if (EXITSTATUS !== 0) {
                 error = new Error('llvm-as exited with code' + EXITSTATUS);
@@ -45,4 +49,5 @@ module.exports = function(assembly, callback) {
             messages.push(text);
         }
     };
-
+    _as(Module);
+};
