@@ -1,4 +1,5 @@
+node_modules
 llvm-as.bc
-llvm-as.js
-llvm-as_temp.js
+build
+lib/_llvm-as.js
 
