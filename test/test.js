@@ -10,7 +10,7 @@ test('nested calls should be possible', function(t) {
         t.notOk(data, 'should not have data');
         t.equal(pm.length, 1, 'should have one message');
         t.equal(pm[0].column, 1, 'at column 1');
-        t.equal(pm[0].line, 1, 'at line 1');
+        t.equal(pm[0].line, 2, 'at line 1');
         t.equal(pm[0].severity, 'error', 'of severity "error"');
 
         as(source, function(err, data, messages, parsedMessages) {

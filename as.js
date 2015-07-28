@@ -34,8 +34,8 @@ module.exports = function(assembly, callback) {
         var m = text.match(/llvm-as:\sllvm\.ll:(\d+):(\d+):\s([a-z]+):\s*(.*)/);
         if (m) {
             parsedMessages.push({
-                line: m[1],
-                column: m[2],
+                line: parseInt(m[1], 10),
+                column: parseInt(m[2], 10),
                 severity: m[3],
                 text: m[4]
             });
