@@ -1,53 +1,45 @@
 var _as = require('./lib/_llvm-as');
+var decorate = require('./decorate');
 
 module.exports = function(assembly, callback) {
-    var messages;
-    var parsedMessages;
-    // remove first and last argument
-    var additionalArguments = [].slice.call(arguments, 1, arguments.length - 1);
-    var args = ['llvm.ll'].concat(additionalArguments);
-    console.log('calling process with args', args);
-    var root;
+    var messages = [];
+    var parsedMessages = [];
+    var data = null;
 
-    var Module = {
-        thisProgram: 'llvm-as',
-        arguments: args,
-        preRun: function() {
-            console.log('prerun', arguments);
-            messages = [];
-            parsedMessages = [];
-            var f = Module.FS_createDataFile('/', 'llvm.ll', Module.intArrayFromString(assembly), true, false);
-            root = f.mount.root;
+    var as = decorate(_as, {
+        name: 'llvm-as',
+        arguments: ['llvm.ll'],
+        preRun: function(Module, root) {
+            Module.FS_createDataFile('/', 'llvm.ll', Module.intArrayFromString(assembly), true, false);
         },
-        onExit: function(EXITSTATUS) {
-            console.log('llvm-as exited with code', EXITSTATUS);
+        postRun: function(Module, root, exitCode) {
             Module.FS_unlink('/llvm.ll');
-
-            var data = null;
-            var error = null;
             var outputFile = root.contents['llvm.bc'];
             if (outputFile) {
                 data = new Uint8Array(outputFile.contents);
                 Module.FS_unlink('/llvm.bc');
             } 
-            if (EXITSTATUS !== 0) {
-                error = new Error('llvm-as exited with code' + EXITSTATUS);
-            }
-            callback(error, data, messages, parsedMessages);
         },
-        printErr: function(text) {
-            console.log(text);
-            var m = text.match(/llvm-as:\sllvm\.ll:(\d+):(\d+):\s([a-z]+):\s*(.*)/);
-            if (m) {
-                parsedMessages.push({
-                    line: m[1],
-                    column: m[2],
-                    severity: m[3],
-                    text: m[4]
-                });
-            }
-            messages.push(text);
+    });
+    
+    as = as.apply(null, [].slice(arguments,1,arguments.length-1));
+    as.on('close', function(exitCode) {
+        var error = null;
+        if (exitCode !== 0) {
+            error = new Error('llvm-as exited with code' + exitCode);
         }
-    };
-    _as(Module);
+        callback(error, data, messages, parsedMessages);
+    });
+    as.stderr.on('data', function(text) {
+        var m = text.match(/llvm-as:\sllvm\.ll:(\d+):(\d+):\s([a-z]+):\s*(.*)/);
+        if (m) {
+            parsedMessages.push({
+                line: m[1],
+                column: m[2],
+                severity: m[3],
+                text: m[4]
+            });
+        }
+        messages.push(text);
+    });
 };

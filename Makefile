@@ -8,7 +8,13 @@ lib/_llvm-as.js: llvm-as.bc
 
 clean:
 	rm lib/_llvm-as.js
+	rm test/_test.js
 
-test: lib/_llvm-as.js
-	cat test.js|$(BIN)/brfs|$(BIN)/browserify - --noparse=$(shell pwd)/lib/_llvm-as.js|node
+test/_test.js: lib/_llvm-as.js test.js as.js decorate.js
+	cat test.js|$(BIN)/brfs|$(BIN)/browserify - --noparse=$(shell pwd)/lib/_llvm-as.js > test/_test.js
+
+.PHONY: test
+test: test/_test.js
+	DEBUG=* node test/_test.js
+
 
