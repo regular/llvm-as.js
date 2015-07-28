@@ -10,11 +10,9 @@ clean:
 	rm lib/_llvm-as.js
 	rm test/_test.js
 
-test/_test.js: lib/_llvm-as.js test.js as.js decorate.js
-	cat test.js|$(BIN)/brfs|$(BIN)/browserify - --noparse=$(shell pwd)/lib/_llvm-as.js > test/_test.js
+test/_test.js: lib/_llvm-as.js test/test.js as.js decorate.js
+	cat test/test.js|$(BIN)/brfs|$(BIN)/browserify - --noparse=$(shell pwd)/lib/_llvm-as.js > test/_test.js
 
 .PHONY: test
 test: test/_test.js
 	DEBUG=* node test/_test.js
-
-
