@@ -4,7 +4,7 @@
   "description": "",
   "main": "llvm-as.js",
   "scripts": {
-    "test": "tape test/*.js",
+    "test": "tape test/*.js && make test",
     "prepublish": "make"
   },
   "author": "Jan Bölsche <jan@lagomorph.de> (http://regular.codes)",
@@ -16,7 +16,8 @@
     "brfs": "^1.4.0",
     "browserify": "^11.0.0",
     "jade": "^1.11.0",
-    "tape": "^4.0.1"
+    "tape": "^4.0.1",
+    "testling": "^1.7.1"
   },
   "dependencies": {
     "debug": "^2.2.0",
