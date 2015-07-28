@@ -1,6 +1,5 @@
 node_modules
 llvm-as.bc
-build
 lib/_llvm-as.js
-test/_test.js
+_llvm-as.js.mem
 
