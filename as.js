@@ -16,7 +16,7 @@ module.exports = function(assembly, callback) {
             Module.FS_unlink('/llvm.ll');
             var outputFile = root.contents['llvm.bc'];
             if (outputFile) {
-                data = new Uint8Array(outputFile.contents);
+                data = new Buffer(outputFile.contents);
                 Module.FS_unlink('/llvm.bc');
             } 
         },

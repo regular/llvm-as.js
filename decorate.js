@@ -3,8 +3,6 @@ var extend = require('xtend');
 var debug = require('debug')('decorator');
 var through = require('through');
 
-debug('Hello!');
-console.log('world');
 // returns a function that returns an EventEmitter
 // that behaves somewhat similar to Node's child_process.ChildProcess.
 // options:
@@ -20,11 +18,13 @@ console.log('world');
 //      - emscripten Module instance
 //      - emscripten filesystem root object
 //      - exit code of the process
+var id = 0;
 module.exports = function(_em, options, cb) {
     var initialArguments = options.arguments || [];
     var name = options.name || 'unnamed';
     var Module = {
-        thisProgram: name
+        thisProgram: name,
+        id: id++
     };
 
     return function() {
@@ -38,13 +38,15 @@ module.exports = function(_em, options, cb) {
         var myModule = extend(Module, {
             arguments: args,
             print: function(text) {
+                debug('stdout: %s', text);
                 ee.stdout.emit('data', text + '\n');
             },
             printErr: function(text) {
+                debug('stderr %d: %s', myModule.id, text);
                 ee.stderr.emit('data', text + '\n');
             },
             preRun: function() {
-                debug('preRun called');
+                debug('preRun called on module %d', myModule.id);
                 var f = myModule.FS_createDataFile('/', '.child_process', myModule.intArrayFromString('just ignore me'), true, false);
                 fs_root = f.mount.root;
                 if (typeof options.preRun === 'function') {
@@ -53,7 +55,7 @@ module.exports = function(_em, options, cb) {
                 }
             },
             onExit: function(exitCode) {
-                debug('exited with code', exitCode);
+                debug('exited module %d with code %d', myModule.id, exitCode);
                 if (typeof options.postRun === 'function') {
                     options.postRun(myModule, fs_root, exitCode);
                 }
