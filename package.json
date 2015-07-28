@@ -4,7 +4,7 @@
   "description": "",
   "main": "llvm-as.js",
   "scripts": {
-    "test": "tape test/*.js && make test",
+    "test": "make test",
     "prepublish": "make"
   },
   "author": "Jan Bölsche <jan@lagomorph.de> (http://regular.codes)",
