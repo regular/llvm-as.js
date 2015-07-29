@@ -2,6 +2,9 @@ var EventEmitter = require('events').EventEmitter;
 var extend = require('xtend');
 var debug = require('debug')('decorator');
 var through = require('through');
+var assert = require('assert');
+
+var createDevice = require('./iostreams');
 
 // returns a function that returns an EventEmitter
 // that behaves somewhat similar to Node's child_process.ChildProcess.
@@ -23,6 +26,7 @@ module.exports = function(_em, options, cb) {
     var initialArguments = options.arguments || [];
     var name = options.name || 'unnamed';
     var Module = {
+        noFSInit: true,
         thisProgram: name,
         id: id++
     };
@@ -37,15 +41,34 @@ module.exports = function(_em, options, cb) {
         ee.stderr = through();
         var myModule = extend(Module, {
             arguments: args,
-            print: function(text) {
-                debug('stdout: %s', text);
-                ee.stdout.emit('data', text + '\n');
-            },
-            printErr: function(text) {
-                debug('stderr %d: %s', myModule.id, text);
-                ee.stderr.emit('data', text + '\n');
-            },
             preRun: function() {
+                debug('creating devices');
+                createDevice(myModule.FS, '/dev', 'stdin', input, null);
+
+                createDevice(myModule.FS, '/dev', 'stdout', null, function(code) {
+                    var text = String.fromCharCode(code);
+                    //debug('new stdout %d: %s', myModule.id, text);
+                    ee.stdout.emit('data', text);
+                });
+
+                createDevice(myModule.FS, '/dev', 'stderr', null, function(code) {
+                    var text = String.fromCharCode(code);
+                    debug('new stderr %d: %s', myModule.id, text);
+                    ee.stderr.emit('data', text);
+                });
+
+                // open default streams for the stdin, stdout and stderr devices
+                (function openStandardStreams(FS) {
+                    var stdin = FS.open('/dev/stdin', 'r');
+                    assert(stdin.fd === 0, 'invalid handle for stdin (' + stdin.fd + ')');
+
+                    var stdout = FS.open('/dev/stdout', 'w');
+                    assert(stdout.fd === 1, 'invalid handle for stdout (' + stdout.fd + ')');
+
+                    var stderr = FS.open('/dev/stderr', 'w');
+                    assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
+                })(myModule.FS);
+                //console.log(Object.keys(myModule));
                 debug('preRun called on module %d', myModule.id);
                 var f = myModule.FS_createDataFile('/', '.child_process', myModule.intArrayFromString('just ignore me'), true, false);
                 fs_root = f.mount.root;

@@ -1,5 +1,7 @@
 var _as = require('./lib/_llvm-as');
 var decorate = require('./decorate');
+var split = require('split');
+var through = require('through');
 
 module.exports = function(assembly, callback) {
     var messages = [];
@@ -30,16 +32,17 @@ module.exports = function(assembly, callback) {
         }
         callback(error, data, messages, parsedMessages);
     });
-    as.stderr.on('data', function(text) {
-        var m = text.match(/llvm-as:\sllvm\.ll:(\d+):(\d+):\s([a-z]+):\s*(.*)/);
+    as.stderr.pipe(split(/\r?\n/, null, {trailing: false})).pipe(through(function(text) {
+        var m = text.match(/llvm-as:\s([^:])+:(\d+):(\d+):\s([a-z]+):\s*(.*)/);
         if (m) {
             parsedMessages.push({
-                line: parseInt(m[1], 10),
-                column: parseInt(m[2], 10),
-                severity: m[3],
-                text: m[4]
+                path: m[1],
+                line: parseInt(m[2], 10),
+                column: parseInt(m[3], 10),
+                severity: m[4],
+                text: m[5]
             });
         }
         messages.push(text);
-    });
+    }));
 };
