@@ -43,31 +43,31 @@ module.exports = function(_em, options, cb) {
             arguments: args,
             preRun: function() {
                 debug('creating devices');
-                createDevice(myModule.FS, '/dev', 'stdin', input, null);
+                createDevice(myModule, '/dev', 'stdin', null, null);
 
-                createDevice(myModule.FS, '/dev', 'stdout', null, function(code) {
+                createDevice(myModule, '/dev', 'stdout', null, function(code) {
                     var text = String.fromCharCode(code);
                     //debug('new stdout %d: %s', myModule.id, text);
                     ee.stdout.emit('data', text);
                 });
 
-                createDevice(myModule.FS, '/dev', 'stderr', null, function(code) {
+                createDevice(myModule, '/dev', 'stderr', null, function(code) {
                     var text = String.fromCharCode(code);
                     debug('new stderr %d: %s', myModule.id, text);
                     ee.stderr.emit('data', text);
                 });
 
                 // open default streams for the stdin, stdout and stderr devices
-                (function openStandardStreams(FS) {
-                    var stdin = FS.open('/dev/stdin', 'r');
+                (function openStandardStreams(FS_open) {
+                    var stdin = FS_open('/dev/stdin', 'r');
                     assert(stdin.fd === 0, 'invalid handle for stdin (' + stdin.fd + ')');
 
-                    var stdout = FS.open('/dev/stdout', 'w');
+                    var stdout = FS_open('/dev/stdout', 'w');
                     assert(stdout.fd === 1, 'invalid handle for stdout (' + stdout.fd + ')');
 
-                    var stderr = FS.open('/dev/stderr', 'w');
+                    var stderr = FS_open('/dev/stderr', 'w');
                     assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
-                })(myModule.FS);
+                })(myModule.FS_open);
                 //console.log(Object.keys(myModule));
                 debug('preRun called on module %d', myModule.id);
                 var f = myModule.FS_createDataFile('/', '.child_process', myModule.intArrayFromString('just ignore me'), true, false);

@@ -9,14 +9,14 @@ var Path = require('path');
 var ERRNO_CODES = require('./errno');
 var debug = require('debug')('iostreams');
 
-module.exports = function createDevice(FS, parent, name, input, output) {
-    var path = Path.join(typeof parent === 'string' ? parent : FS.getPath(parent), name);
-    var mode = FS.getMode(!!input, !!output);
-    if (!FS.createDevice.major) FS.createDevice.major = 64;
-    var dev = FS.makedev(FS.createDevice.major++, 0);
+module.exports = function createDevice(m, parent, name, input, output) {
+    var path = Path.join(typeof parent === 'string' ? parent : m.FS_getPath(parent), name);
+    var mode = m.FS_getMode(!!input, !!output);
+    if (!m.FS_createDevice.major) m.FS_createDevice.major = 64;
+    var dev = m.FS_makedev(m.FS_createDevice.major++, 0);
     // Create a fake device that a set of stream ops to emulate
     // the old behavior.
-    FS.registerDevice(dev, {
+    m.FS_registerDevice(dev, {
         open: function(stream) {
                   stream.seekable = false;
               },
@@ -30,10 +30,10 @@ module.exports = function createDevice(FS, parent, name, input, output) {
                       try {
                           result = input();
                       } catch (e) {
-                          throw new FS.ErrnoError(ERRNO_CODES.EIO);
+                          throw new m.FS_ErrnoError(ERRNO_CODES.EIO);
                       }
                       if (result === undefined && bytesRead === 0) {
-                          throw new FS.ErrnoError(ERRNO_CODES.EAGAIN);
+                          throw new m.FS_ErrnoError(ERRNO_CODES.EAGAIN);
                       }
                       if (result === null || result === undefined) break;
                       bytesRead++;
@@ -51,7 +51,7 @@ module.exports = function createDevice(FS, parent, name, input, output) {
                            output(buffer[offset+i]);
                        } catch (e) {
                            debug('caught exception from output');
-                           throw new FS.ErrnoError(ERRNO_CODES.EIO);
+                           throw new m.FS_ErrnoError(ERRNO_CODES.EIO);
                        }
                    }
                    if (length) {
@@ -60,5 +60,5 @@ module.exports = function createDevice(FS, parent, name, input, output) {
                    return i;
                }
     });
-    return FS.mkdev(path, mode, dev);
+    return m.FS_mkdev(path, mode, dev);
 };

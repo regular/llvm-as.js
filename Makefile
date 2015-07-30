@@ -9,6 +9,7 @@ lib/_llvm-as.js: llvm-as.bc
 	-s ASSERTIONS=0 \
 	-s NO_FILESYSTEM=0 \
 	-s NO_BROWSER=1 \
+	-s EXPORTED_RUNTIME_METHODS=[\'intArrayFromString\',\'FS_open\',\'FS_createDataFile\',\'FS_unlink\',\'FS_makedev\',\'FS_getMode\',\'FS_getPath\',\'FS_registerDevice\',\'FS_mkdev\',\'FS_ErrnoError\',\'FS_createDevice\'] \
 	-s NODE_STDOUT_FLUSH_WORKAROUND=0 \
 	-s NO_DYNAMIC_EXECUTION=1 \
 	-s USE_SDL=0 \
