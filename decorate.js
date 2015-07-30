@@ -3,6 +3,7 @@ var extend = require('xtend');
 var debug = require('debug')('decorator');
 var through = require('through');
 var assert = require('assert');
+var bl = require('bl');
 
 var createDevice = require('./iostreams');
 
@@ -10,8 +11,6 @@ var createDevice = require('./iostreams');
 // that behaves somewhat similar to Node's child_process.ChildProcess.
 // options:
 // - name: name of the executable
-// - arguments: command line argument list to be inserted in front of
-//   regular arguments
 // - preRun: function called immediately before the emscriptified 'process' runs.
 //   Arguments are:
 //      - emscripten Module instance
@@ -22,9 +21,8 @@ var createDevice = require('./iostreams');
 //      - emscripten filesystem root object
 //      - exit code of the process
 var id = 0;
-module.exports = function(_em, options, cb) {
-    var initialArguments = options.arguments || [];
-    var name = options.name || 'unnamed';
+module.exports = function(name, _em, options) {
+    options = options || {};
     var Module = {
         noFSInit: true,
         thisProgram: name,
@@ -32,18 +30,17 @@ module.exports = function(_em, options, cb) {
     };
 
     return function() {
-        var additionalArguments = [].slice.call(arguments,0);
-        var args = initialArguments.concat(additionalArguments);
-        debug('calling process with args', args);
+        debug('calling process with args', arguments);
         var fs_root;
         var ee = new EventEmitter();
+        ee.stdin = bl();
         ee.stdout = through();
         ee.stderr = through();
         var myModule = extend(Module, {
-            arguments: args,
+            arguments: arguments,
             preRun: function() {
                 debug('creating devices');
-                createDevice(myModule, '/dev', 'stdin', null, null);
+                createDevice(myModule, '/dev', 'stdin', ee.stdin, null);
                 createDevice(myModule, '/dev', 'stdout', null, ee.stdout);
                 createDevice(myModule, '/dev', 'stderr', null, ee.stderr);
 
@@ -58,8 +55,9 @@ module.exports = function(_em, options, cb) {
                     var stderr = FS_open('/dev/stderr', 'w');
                     assert(stderr.fd === 2, 'invalid handle for stderr (' + stderr.fd + ')');
                 })(myModule.FS_open);
-                //console.log(Object.keys(myModule));
+
                 debug('preRun called on module %d', myModule.id);
+                // TODO: find a less hackish-way to get the filesystem root
                 var f = myModule.FS_createDataFile('/', '.child_process', myModule.intArrayFromString('just ignore me'), true, false);
                 fs_root = f.mount.root;
                 if (typeof options.preRun === 'function') {

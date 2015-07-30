@@ -9,7 +9,9 @@ var Path = require('path');
 var ERRNO_CODES = require('./errno');
 var debug = require('debug')('iostreams');
 
-// output is a through stream (push() is used)
+// input is a Readable stream in non-flow mode (see
+// https://github.com/joyent/node/blob/v0.10/doc/api/stream.markdown)
+// output is a writable stream.
 module.exports = function createDevice(m, parent, name, input, output) {
     var path = Path.join(typeof parent === 'string' ? parent : m.FS_getPath(parent), name);
     var mode = m.FS_getMode(!!input, !!output);
@@ -20,39 +22,57 @@ module.exports = function createDevice(m, parent, name, input, output) {
     m.FS_registerDevice(dev, {
         open: function(stream) {
                   stream.seekable = false;
+                  if (input && !input.readable) {
+                    throw new Error('input needs to be areadable stream');
+                  }
+                  if (output && !output.writable) {
+                    throw new Error('output needs to be a writalbe stream');
+                  }
               },
         close: function(stream) {
                    // flush any pending line data
                    if (output) {
-                       output.push(null);
+                       output.emit('end');
                    }
                },
         read: function(stream, buffer, offset, length, pos /* ignored */) {
-                  var bytesRead = 0;
-                  for (var i = 0; i < length; i++) {
-                      var result;
-                      try {
-                          result = input();
-                      } catch (e) {
-                          throw new m.FS_ErrnoError(ERRNO_CODES.EIO);
-                      }
-                      if (result === undefined && bytesRead === 0) {
-                          throw new m.FS_ErrnoError(ERRNO_CODES.EAGAIN);
-                      }
-                      if (result === null || result === undefined) break;
-                      bytesRead++;
-                      buffer[offset+i] = result;
-                  }
-                  if (bytesRead) {
-                      stream.node.timestamp = Date.now();
-                  }
-                  return bytesRead;
-              },
+            debug('request to read %d bytes', length);
+            debug('target buffer is %s', typeof buffer);
+            // first try to read the desired amount of bytes
+            var result = input.read(length);
+            if (!Buffer.isBuffer(result) && result !== null) {
+                debug('received non-buffer');
+                throw new Error('stdin must be a binary stream in non-flowing mode');
+            }
+            if (result === null) {
+                // get as much as we can
+                result = input.read();
+            }
+            if (result === null) {
+                debug('throwing EAGAIN');
+                // try again later
+                //throw new m.FS_ErrnoError(ERRNO_CODES.EAGAIN);
+                return 0;
+            }
+            debug('copying %d bytes', result.length);
+            if (typeof buffer === 'object') {
+                // unfortunatley the buffer provided
+                // by the runtime is not an instance of Buffer
+                // or Uint8Array
+                for(var x=0, i=offset, l = offset + result.length; i<l; ++i, ++x) {
+                    buffer[i] = result[x];
+                }
+            } else {
+                result.copy(buffer, offset, 0, result.length);
+            }
+            stream.node.timestamp = Date.now();
+            return result.length;
+        },
         write: function(stream, buffer, offset, length, pos) {
                    buffer = buffer.subarray(offset, offset+length);
                    buffer = new Buffer(buffer);
                    debug('pushing into outstream', buffer);
-                    output.push(buffer);
+                    output.emit('data', buffer);
                    if (length) {
                        stream.node.timestamp = Date.now();
                    }

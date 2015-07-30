@@ -1,7 +1,7 @@
 var as = require('../as');
 var fs = require('fs');
 var test = require('tape');
-var source = fs.readFileSync(__dirname + '/fixtures/test.ll', 'utf-8');
+var source = fs.readFileSync(__dirname + '/fixtures/test.ll', 'utf8');
 var bc = fs.readFileSync(__dirname + '/fixtures/test.bc');
 
 test('nested calls should be possible', function(t) {
