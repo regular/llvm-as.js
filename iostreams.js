@@ -51,9 +51,6 @@ module.exports = function createDevice(m, parent, name, input, output) {
         write: function(stream, buffer, offset, length, pos) {
                    buffer = buffer.subarray(offset, offset+length);
                    buffer = new Buffer(buffer);
-                   if (true) { // todo: encoding option
-                       buffer = buffer.toString('utf8');
-                   }
                    debug('pushing into outstream', buffer);
                     output.push(buffer);
                    if (length) {
