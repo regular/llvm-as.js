@@ -44,18 +44,8 @@ module.exports = function(_em, options, cb) {
             preRun: function() {
                 debug('creating devices');
                 createDevice(myModule, '/dev', 'stdin', null, null);
-
-                createDevice(myModule, '/dev', 'stdout', null, function(code) {
-                    var text = String.fromCharCode(code);
-                    //debug('new stdout %d: %s', myModule.id, text);
-                    ee.stdout.emit('data', text);
-                });
-
-                createDevice(myModule, '/dev', 'stderr', null, function(code) {
-                    var text = String.fromCharCode(code);
-                    debug('new stderr %d: %s', myModule.id, text);
-                    ee.stderr.emit('data', text);
-                });
+                createDevice(myModule, '/dev', 'stdout', null, ee.stdout);
+                createDevice(myModule, '/dev', 'stderr', null, ee.stderr);
 
                 // open default streams for the stdin, stdout and stderr devices
                 (function openStandardStreams(FS_open) {

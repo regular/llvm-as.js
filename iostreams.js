@@ -9,6 +9,7 @@ var Path = require('path');
 var ERRNO_CODES = require('./errno');
 var debug = require('debug')('iostreams');
 
+// output is a through stream (push() is used)
 module.exports = function createDevice(m, parent, name, input, output) {
     var path = Path.join(typeof parent === 'string' ? parent : m.FS_getPath(parent), name);
     var mode = m.FS_getMode(!!input, !!output);
@@ -22,6 +23,9 @@ module.exports = function createDevice(m, parent, name, input, output) {
               },
         close: function(stream) {
                    // flush any pending line data
+                   if (output) {
+                       output.push(null);
+                   }
                },
         read: function(stream, buffer, offset, length, pos /* ignored */) {
                   var bytesRead = 0;
@@ -45,19 +49,17 @@ module.exports = function createDevice(m, parent, name, input, output) {
                   return bytesRead;
               },
         write: function(stream, buffer, offset, length, pos) {
-                   //debug('write', buffer);
-                   for (var i = 0; i < length; i++) {
-                       try {
-                           output(buffer[offset+i]);
-                       } catch (e) {
-                           debug('caught exception from output');
-                           throw new m.FS_ErrnoError(ERRNO_CODES.EIO);
-                       }
+                   buffer = buffer.subarray(offset, offset+length);
+                   buffer = new Buffer(buffer);
+                   if (true) { // todo: encoding option
+                       buffer = buffer.toString('utf8');
                    }
+                   debug('pushing into outstream', buffer);
+                    output.push(buffer);
                    if (length) {
                        stream.node.timestamp = Date.now();
                    }
-                   return i;
+                   return length;
                }
     });
     return m.FS_mkdev(path, mode, dev);
