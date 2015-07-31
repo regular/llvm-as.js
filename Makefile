@@ -7,6 +7,7 @@ lib/_llvm-as.js: llvm-as.bc
 	llvm-as.bc -o lib/_llvm-as.js \
 	-s EXPORT_NAME=\"exports\" -s MODULARIZE=1 \
 	-s ASSERTIONS=0 \
+	-s DEMANGLE_SUPPORT=1 \
 	-s NO_FILESYSTEM=0 \
 	-s NO_BROWSER=1 \
 	-s EXPORTED_RUNTIME_METHODS=[\'intArrayFromString\',\'FS_open\',\'FS_createDataFile\',\'FS_unlink\',\'FS_makedev\',\'FS_getMode\',\'FS_getPath\',\'FS_registerDevice\',\'FS_mkdev\',\'FS_ErrnoError\',\'FS_createDevice\'] \
