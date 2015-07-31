@@ -55,15 +55,16 @@ module.exports = function createDevice(m, parent, name, input, output) {
                 return 0;
             }
             debug('copying %d bytes', result.length);
-            if (typeof buffer === 'object') {
-                // unfortunatley the buffer provided
-                // by the runtime is not an instance of Buffer
-                // or Uint8Array
+            if (ArrayBuffer.isView(result) && ArrayBuffer.isView(buffer) &&
+                    result.BYTES_PER_ELEMENT === 1 &&  buffer.BYTES_PER_ELEMENT === 1)
+            {
+                debug('fast path');
+                buffer.set(result, offset);
+            } else {
+                debug('slow path');
                 for(var x=0, i=offset, l = offset + result.length; i<l; ++i, ++x) {
                     buffer[i] = result[x];
                 }
-            } else {
-                result.copy(buffer, offset, 0, result.length);
             }
             stream.node.timestamp = Date.now();
             return result.length;
