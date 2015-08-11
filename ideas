@@ -1,0 +1,65 @@
+# domfs
+    - directories are <UL>s
+        - files are LIs with attriubutes
+            data=mode="777" name='myfile.txt'
+            - file content might be
+                - a textarea
+                - an A with href for (soft-)links
+                - an A with href of a data-uri
+                - script, if mode is +x
+
+    Or, even better: Any tag can be used. if it has children, it is
+    a directory. If it has either CTEXT or a SRC attribute or an HREF attribute,
+    it is a file. NOTE: empty directories must be possible, but the data-mode attribute
+    also explicitly says what a directory is ...)
+
+executalbe format
+    - CommonjS module that exports a function
+        that takes one object argument that specifies
+            argv (including argv[0]
+            environment
+            streams fot std{in,out,err}
+
+    - executables are 'loaded by adding a script tag to
+        <div id='executable-cache'>
+    - are published on th gh-pages branch of their port repository
+    - one special repository acts as the /usr/bin directory by having something like
+        this on its gh-pages
+        <ul name='bin'>
+            <li name='echo' data-mode='776'>
+                <a href="https://regular.github.io/echo/echo"/>
+            </li>
+            ...
+        </ul>
+        that's a DOMFS directory that can be mounted
+
+Q: can we implement a filesystem as a device?
+A device can be a file node. Can it be a directory node too?
+
+# bash, ls, cd, echo, cat ported to JS
+    - combined with a terminal emulator
+    - playing with domfs
+    - perfect learning tool for beginners
+    - can load and execute eemscipten-binaries cross-domain
+    - Unix in the browser
+    - "If the browser is an operating system, it needs a decent shell"
+
+## next step: port all parts of the toolchain
+    - llvm-as and llvm-opt
+    - llc
+    - libc and friends are already there
+    - syscalls
+    - What is really needed to make a minimal environment
+        for a CLI process?
+    - close the circle by making emcc work in the browser
+    - needs clang
+
+# Use CommonJS/require/npm/browserify for src/library_*
+    - enable open ecosystem that fosters collaboration and experimentation
+    - much easier to combine with modules outside of emscripten
+    - use require and package.json to declare dependencies between library_ files
+    - generated code does not contain library_ files, but has require() statements
+        and possible a generated package.json
+    - browserify then bundles all of that into a single file
+    - should do a proof of concept
+
